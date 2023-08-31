@@ -1,0 +1,39 @@
+- become: yes
+  hosts: all
+  name: setup zerotier identity and networks from terraform
+  tasks:
+
+    - name: Wait for apt to unlock
+      become: yes
+      shell:  while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do sleep 5; done;
+
+    - name: Add the user 'zerotier'
+      user:
+        name: zerotier
+
+    - name: Create ZeroTier Home Directory
+      file:
+        path: /var/lib/zerotier-one/networks.d
+        state: directory
+
+    - name: Prejoin zerotier network # should be a list
+      file:
+        path: /var/lib/zerotier-one/networks.d/{{ zt_network }}.conf
+        state: touch
+
+    - name: Copy ZeroTier Identity
+      ansible.builtin.copy:
+        content: "{{ zt_secret }}"
+        dest: /var/lib/zerotier-one/identity.secret
+        owner: zerotier
+        group: zerotier
+        mode: '0644'
+
+    - name: Copy ZeroTier Identity
+      ansible.builtin.copy:
+        content: "{{ zt_public }}"
+        dest: /var/lib/zerotier-one/identity.public
+        owner: zerotier
+        group: zerotier
+        mode: '0755'
+

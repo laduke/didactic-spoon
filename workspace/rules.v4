@@ -1,0 +1,16 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+
+-A INPUT -i lo -j ACCEPT -m comment --comment "zerotier-cli"
+-A OUTPUT -o lo -j ACCEPT -m comment --comment "zerotier-cli"
+
+-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p udp --dport 9993 -j ACCEPT
+-A INPUT -p tcp --dport 22 -j ACCEPT
+
+-A OUTPUT -j ACCEPT
+-A INPUT -i zt+ -j ACCEPT -m comment --comment "zerotier interfaces"
+
+COMMIT

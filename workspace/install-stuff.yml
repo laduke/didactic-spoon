@@ -1,0 +1,49 @@
+- become: yes
+  hosts: wan_nodes
+  name: hello
+  tasks:
+    - name: Add SSH key to root
+      authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', pub_key) }}"
+
+
+    - name: Wait for apt to unlock
+      become: yes
+      shell:  while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do sleep 5; done;
+
+    - name: Install stuff
+      apt:
+        pkg:
+          - build-essential
+          - git
+          - iperf3
+          - iptables-persistent
+        update_cache: yes
+        state: latest
+
+
+    - name: Run zerotier install script
+      # needs to happen after setup-zerotier playbook
+      shell:  curl -S https://install.zerotier.com | bash
+
+    - name: disable ufw
+      # needs to happen after setup-zerotier playbook
+      shell:  systemctl disable ufw
+
+    - name: Copy rules.v4
+      ansible.builtin.copy:
+        src: rules.v4
+        dest: /etc/iptables/rules.v4
+
+    - name: Copy rules.v6
+      ansible.builtin.copy:
+        src: rules.v6
+        dest: /etc/iptables/rules.v6
+
+    - name: Install Rules
+      # needs to happen after setup-zerotier playbook
+      shell: |
+        iptables-restore /etc/iptables/rules.v4
+        ip6tables-restore /etc/iptables/rules.v6

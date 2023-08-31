@@ -1,0 +1,7 @@
+- become: yes
+  hosts: wan_nodes
+  name: join
+  tasks:
+    - name: Join
+      become: yes
+      shell:  zerotier-cli join "{{ zt_network }}"

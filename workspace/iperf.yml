@@ -1,0 +1,23 @@
+- become: yes
+  hosts: wan_nodes
+  tasks:
+
+  - name: ping everything
+    register: out
+    shell: ping -c 1 {{ item }}
+    loop: "{{ groups['zt_nodes'] }}"
+
+  - name: set output base
+    set_fact: output_base="{{ inventory_hostname }}_{{ ansible_date_time.date }}_{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}.out"
+
+  - name: set iperf out
+    set_fact: iperf_out="iperf_{{ output_base }}"
+
+  - name: iperf3 everything
+    shell: iperf3 -t 10 --client {{ item }} >> {{ iperf_out }}
+    throttle: 1
+    register: iperf_results
+    loop: "{{ groups['zt_nodes'] }}"
+
+  - name: grab iperf output
+    fetch: src={{ iperf_out }} dest=results/ flat=yes

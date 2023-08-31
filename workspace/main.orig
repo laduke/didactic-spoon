@@ -1,0 +1,66 @@
+variable "vultr_token" {}
+// variable "pvt_key" {}
+
+# for_each = toset( ["Todd", "James", "Alice", "Dottie"] )
+variable "nodes" ["Todd", "James", "Alice", "Dottie"]
+
+
+// ZEROTIER
+
+resource "zerotier_network" "test_net" {
+  name        = "test net"
+  description = ""
+  assignment_pool {
+    start = "10.2.0.1"
+    end   = "10.2.0.254"
+  }
+  route {
+    target = "10.2.0.0/16"
+  }
+  flow_rules = "accept;"
+}
+
+resource "zerotier_identity" "zt1" {}
+
+resource "zerotier_member" "zt1" {
+  name                    = "zt1"
+  member_id               = zerotier_identity.zt1.id
+  network_id              = zerotier_network.test_net.id
+  description             = ""
+  ip_assignments          = ["10.2.0.11"]
+}
+
+// VULTR
+
+provider "vultr" {
+  api_key     = var.vultr_token
+  rate_limit  = 700
+  retry_limit = 3
+}
+
+// data "template_file" "user_data1" {
+//   template = templatefile("./user-data.yaml", {
+//     "zt_identity" = zerotier_identity.vultr1
+//     "zt_network_id"  = zerotier_network.vultr_net.id
+//   })
+// }
+
+resource "vultr_instance" "zt1" {
+  plan        = "vc2-1c-1gb"
+  region      = "lax"
+  # os_id       = "477" # Debian 11
+  os_id       = "2136" # Debian 12
+  ssh_key_ids = ["39d6da52-6474-4486-b247-08c9d401cc0d"]
+
+  label       = "vultr1"
+  hostname    = "vultr1"
+  enable_ipv6 = false
+
+  // user_data   = data.template_file.user_data1.rendered
+}
+
+output "main_ips1" {
+  value = {
+    vultr1 = vultr_instance.zt1.main_ip
+  }
+}
